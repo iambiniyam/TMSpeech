@@ -495,7 +495,7 @@ namespace TMSpeech.GUI.ViewModels
     /// can offer an empty option: an empty selection disables translation and
     /// leaves captions exactly as upstream.
     /// </summary>
-    public partial class TranslateSectionConfigViewModel : SectionConfigViewModel
+    public class TranslateSectionConfigViewModel : SectionConfigViewModelBase
     {
         protected override string SectionName => TranslatorConfigTypes.SectionName;
 

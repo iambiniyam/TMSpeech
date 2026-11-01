@@ -1,9 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Text.Json;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Media;
 using TMSpeech.Core.Plugins;
 
 namespace TMSpeech.Translator.Offline;
