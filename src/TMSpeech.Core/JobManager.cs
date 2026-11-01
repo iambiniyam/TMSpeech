@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -50,6 +50,34 @@ namespace TMSpeech.Core
         public abstract void Start();
         public abstract void Pause();
         public abstract void Stop();
+
+        /// <summary>
+        /// Translator applied to completed sentences. Null disables translation
+        /// and leaves caption output exactly as before.
+        /// </summary>
+        public ITranslator? Translator { get; set; }
+
+        /// <summary>
+        /// Translate a sentence, or return null when no translator is set.
+        /// Translation failures never propagate: a broken plugin must not
+        /// interrupt the caption stream.
+        /// </summary>
+        protected string? TryTranslate(string text)
+        {
+            if (Translator == null || string.IsNullOrWhiteSpace(text)) return null;
+            try
+            {
+                var result = Translator.Translate(text);
+                return string.IsNullOrWhiteSpace(result) ? null : result;
+            }
+            catch (Exception ex)
+            {
+                NotificationManager.Instance.Notify(
+                    $"{ex.Message}", "翻译失败", NotificationType.Warning);
+                System.Diagnostics.Debug.WriteLine($"Translation failed: {ex}");
+                return null;
+            }
+        }
     }
 
     public class JobManagerImpl : JobManager
@@ -121,6 +149,11 @@ namespace TMSpeech.Core
 
         private void OnRecognizerOnSentenceDone(object? sender, SpeechEventArgs args)
         {
+            // Attach the translation before anything downstream consumes the event,
+            // so history, logs and captions all see the same object.
+            var translation = TryTranslate(args.Text.Text);
+            if (translation != null) args.Text.Translation = translation;
+
             // Save the sentense to log
             if (logFile != null && logFile.Length > 0)
             {

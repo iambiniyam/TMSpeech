@@ -26,7 +26,17 @@
                    Margin="8,4"
                    PointerMoved="InputElement_OnPointerMoved">
           <TextBlock IsHitTestVisible="False" Text="{Binding TimeStr}" Width="100"></TextBlock>
-          <SelectableTextBlock IsHitTestVisible="False" Text="{Binding Text}" TextWrapping="Wrap"></SelectableTextBlock>
+          <StackPanel>
+            <SelectableTextBlock IsHitTestVisible="False" Text="{Binding Text}" TextWrapping="Wrap"></SelectableTextBlock>
+            <!-- Translation line: hidden entirely when no translator is configured. -->
+            <SelectableTextBlock IsHitTestVisible="False"
+                                 Text="{Binding Translation}"
+                                 TextWrapping="Wrap"
+                                 Foreground="#8899CC"
+                                 FontStyle="Italic"
+                                 Margin="0,2,0,0"
+                                 IsVisible="{Binding HasTranslation}"></SelectableTextBlock>
+          </StackPanel>
         </DockPanel>
       </DataTemplate>
     </ItemsControl.ItemTemplate>

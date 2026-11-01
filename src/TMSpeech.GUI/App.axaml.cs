@@ -101,6 +101,32 @@ public partial class App : Application
                 });
             }
 
+            // Attach the configured translator, if any. Absent config leaves
+            // JobManager.Translator null and captions behave as before.
+            try
+            {
+                var translatorId = ConfigManagerFactory.Instance.Get<string>(TranslatorConfigTypes.Translator);
+                if (!string.IsNullOrWhiteSpace(translatorId))
+                {
+                    var translators = Core.Plugins.PluginManagerFactory.GetInstance().Translators;
+                    if (translators.TryGetValue(translatorId, out var translator) && translator != null)
+                    {
+                        var pluginConfig = ConfigManagerFactory.Instance.Get<string>(
+                            TranslatorConfigTypes.GetPluginConfigKey(translatorId));
+                        if (!string.IsNullOrWhiteSpace(pluginConfig))
+                        {
+                            translator.LoadConfig(pluginConfig);
+                        }
+                        JobManagerFactory.Instance.Translator = translator;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // A broken translator must not prevent the app from starting.
+                System.Diagnostics.Debug.WriteLine($"Translator setup failed: {ex}");
+            }
+
             // Run recognizer if config is set.
             try
             {

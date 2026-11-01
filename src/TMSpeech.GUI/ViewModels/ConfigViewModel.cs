@@ -155,6 +155,7 @@ namespace TMSpeech.GUI.ViewModels
 
         public AudioSectionConfigViewModel AudioSectionConfig { get; } = new AudioSectionConfigViewModel();
         public RecognizeSectionConfigViewModel RecognizeSectionConfig { get; } = new RecognizeSectionConfigViewModel();
+        public TranslateSectionConfigViewModel TranslateSectionConfig { get; } = new TranslateSectionConfigViewModel();
         public NotificationConfigViewModel NotificationConfig { get; } = new NotificationConfigViewModel();
 
         [ObservableAsProperty]
@@ -487,6 +488,81 @@ namespace TMSpeech.GUI.ViewModels
                         );
                     }
                 });
+        }
+    }
+    /// <summary>
+    /// Translator selection. Mirrors the recognizer section so the settings UI
+    /// can offer an empty option: an empty selection disables translation and
+    /// leaves captions exactly as upstream.
+    /// </summary>
+    public partial class TranslateSectionConfigViewModel : SectionConfigViewModel
+    {
+        protected override string SectionName => TranslatorConfigTypes.SectionName;
+
+        [Reactive]
+        [ConfigJsonValue]
+        public string Translator { get; set; } = "";
+
+        [ObservableAsProperty]
+        public IReadOnlyDictionary<string, Core.Plugins.ITranslator> TranslatorsAvailable { get; }
+
+        [ObservableAsProperty]
+        public IPluginConfigEditor? ConfigEditor { get; }
+
+        [Reactive]
+        public string PluginConfig { get; set; } = "";
+
+        public ReactiveCommand<Unit, Unit> RefreshCommand { get; }
+
+        public IReadOnlyDictionary<string, Core.Plugins.ITranslator> Refresh()
+        {
+            return Core.Plugins.PluginManagerFactory.GetInstance().Translators;
+        }
+
+        public override Dictionary<string, object> Serialize()
+        {
+            return new Dictionary<string, object>
+            {
+                { TranslatorConfigTypes.Translator, Translator },
+            };
+        }
+
+        public override void Deserialize(IReadOnlyDictionary<string, object> dict)
+        {
+            if (dict.ContainsKey(TranslatorConfigTypes.Translator))
+            {
+                Translator = dict[TranslatorConfigTypes.Translator]?.ToString() ?? "";
+            }
+            if (!string.IsNullOrEmpty(Translator) &&
+                dict.ContainsKey(TranslatorConfigTypes.GetPluginConfigKey(Translator)))
+            {
+                PluginConfig = dict[TranslatorConfigTypes.GetPluginConfigKey(Translator)]?.ToString() ?? "";
+            }
+        }
+
+        public TranslateSectionConfigViewModel()
+        {
+            this.RefreshCommand = ReactiveCommand.Create(() => { });
+            this.RefreshCommand.Merge(Observable.Return(Unit.Default))
+                .SelectMany(u => Observable.FromAsync(() => Task.Run(() => Refresh())))
+                .ToPropertyEx(this, x => x.TranslatorsAvailable);
+
+            this.WhenAnyValue(u => u.Translator, u => u.TranslatorsAvailable)
+                .Where(u => u.Item1 != null && u.Item2 != null)
+                .Select(u => u.Item1)
+                .DistinctUntilChanged()
+                .Select(x => string.IsNullOrEmpty(x) ? null : TranslatorsAvailable)
+                .Select(map =>
+                {
+                    if (map == null || !map.TryGetValue(Translator, out var plugin) || plugin == null)
+                        return (IPluginConfigEditor?)null;
+                    var editor = plugin.CreateConfigEditor();
+                    var config = ConfigManagerFactory.Instance.Get<string>(
+                        TranslatorConfigTypes.GetPluginConfigKey(Translator));
+                    editor?.LoadConfigString(config);
+                    return editor;
+                })
+                .ToPropertyEx(this, x => x.ConfigEditor);
         }
     }
 }

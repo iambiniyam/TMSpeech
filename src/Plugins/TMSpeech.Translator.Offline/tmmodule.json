@@ -1,0 +1,11 @@
+{
+  "id": "TMSpeech.Translator.Offline",
+  "version": 1,
+  "desc": "本地中译英翻译，不联网",
+  "displayVersion": "0.1.0",
+  "name": "离线翻译",
+  "apiLevel": 1,
+  "assemblies": [
+    "TMSpeech.Translator.Offline.dll"
+  ]
+}

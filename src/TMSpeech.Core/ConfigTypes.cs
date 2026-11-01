@@ -98,6 +98,19 @@ public static class AudioSourceConfigTypes
     }
 }
 
+public static class TranslatorConfigTypes
+{
+    public const string SectionName = "translator";
+
+    /// <summary>Plugin id of the active translator, or empty for none.</summary>
+    public const string Translator = "translator.source";
+
+    public static string GetPluginConfigKey(string pluginId)
+    {
+        return $"plugin.{pluginId}.config";
+    }
+}
+
 public static class RecognizerConfigTypes
 {
     public const string SectionName = "recognizer";
